@@ -1,17 +1,82 @@
-# React + Vite
+# HATCH·OS — Incubator Control UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ESP32 incubator monitor and control panel. React + Vite frontend, Node.js WebSocket bridge, ESP32-CAM live feed.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 18+
+- ESP32 device running WebSocket firmware
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+```
 
-## Expanding the ESLint configuration
+## Run
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-# humidity-project
+**Both servers at once:**
+```bash
+npm run dev:all
+```
+
+**Or separately:**
+```bash
+# terminal 1 — WebSocket bridge (port 8080)
+npm run server
+
+# terminal 2 — frontend dev server (port 5173)
+npm run dev
+```
+
+Open `http://localhost:5173` in browser.
+
+## Environment
+
+By default the frontend connects to `ws://localhost:8080`. Override with:
+
+```bash
+# .env
+VITE_WS_URL=ws://192.168.1.x:8080
+```
+
+## WebSocket Protocol
+
+### ESP → Server
+
+| Type | Description |
+|------|-------------|
+| Binary (JPEG) | Camera frame — forwarded to all browser clients |
+| `{"type":"identify","client":"camera"}` | Camera client handshake |
+| `{"type":"full_status", ...}` | Sensor + device state |
+
+**full_status payload:**
+```json
+{
+  "type": "full_status",
+  "temp": 37.4,
+  "humi": 58.2,
+  "heater": true,
+  "fog": false,
+  "light": true,
+  "motor": false,
+  "fan": true,
+  "temp_set": 37.5,
+  "humi_set": 55.0
+}
+```
+
+### Browser → ESP
+
+| Type | Description |
+|------|-------------|
+| `{"type":"identify","client":"web"}` | Sent on connect |
+| `{"type":"control","device":"heater","state":true}` | Toggle device |
+
+Devices: `heater`, `fog`, `light`, `motor`, `fan`
+
+## Build
+
+```bash
+npm run build
+```
