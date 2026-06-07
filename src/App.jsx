@@ -16,6 +16,7 @@ function formatUptime(s) {
 export default function App() {
   const [active, setActive] = useState('dashboard');
   const wsRef = useRef(null);
+  const lockedFieldsRef = useRef(new Set());
 
   const camUrlRef = useRef(null);
 
@@ -118,15 +119,16 @@ export default function App() {
         }
 
         if (msg.type === 'full_status') {
+          const locked = lockedFieldsRef.current;
           setState(prev => ({
             ...prev,
             temp: msg.temp,
             hum: msg.humi,
-            heaterOn: msg.heater,
-            mistOn: msg.fog,
-            lampOn: msg.light,
-            motorOn: msg.motor,
-            fanOn: msg.fan,
+            heaterOn: locked.has('heaterOn') ? prev.heaterOn : msg.heater,
+            mistOn:   locked.has('mistOn')   ? prev.mistOn   : msg.fog,
+            lampOn:   locked.has('lampOn')   ? prev.lampOn   : msg.light,
+            motorOn:  locked.has('motorOn')  ? prev.motorOn  : msg.motor,
+            fanOn:    locked.has('fanOn')    ? prev.fanOn    : msg.fan,
             tempTarget: msg.temp_set,
             humTarget: msg.humi_set,
             tempHistory: [...prev.tempHistory.slice(1), msg.temp],
@@ -162,7 +164,11 @@ export default function App() {
       fan:    'fanOn',
     };
     const field = fieldMap[device];
-    if (field) set({ [field]: value });
+    if (field) {
+      set({ [field]: value });
+      lockedFieldsRef.current.add(field);
+      setTimeout(() => lockedFieldsRef.current.delete(field), 2500);
+    }
     sendWS({ type: 'control', device, state: value });
   }, [set, sendWS]);
 
