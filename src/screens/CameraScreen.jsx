@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Panel, SectionH } from "../components/ui";
-import { Icon } from "../components/Icons";
+import { SectionH } from "../components/ui";
 
 export default function CameraScreen({ state, control }) {
-  const { lampOn, temp, hum, connection, camFrame } = state;
-  const [recording, setRecording] = useState(false);
-  const [resolution, setResolution] = useState("VGA");
-  const [framerate, setFramerate] = useState("15");
+  const { temp, hum, connection, camFrame } = state;
+  const [recording] = useState(false);
+  const [resolution] = useState("VGA");
+  const [framerate] = useState("15");
 
   return (
     <div className="screen">
