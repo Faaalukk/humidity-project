@@ -54,7 +54,7 @@ export default function App() {
     setState(prev => ({ ...prev, ...patch }));
   }, []);
 
-  // WebSocket — auto-reconnect bridge to server.js
+  // Control WebSocket  →  /ws  (JSON only)
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL
       ?? `${window.location.origin.replace(/^http/, 'ws')}/ws`;
@@ -71,12 +71,9 @@ export default function App() {
       ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
-      ws.binaryType = 'blob';
-
       ws.onopen = () => {
         set({ connection: 'connected' });
         ws.send(JSON.stringify({ type: 'identify', client: 'web' }));
-        // measure latency with a ping/pong loop
         pingTimer = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
             t0 = Date.now();
@@ -94,26 +91,15 @@ export default function App() {
       ws.onerror = () => {};
 
       ws.onmessage = (e) => {
-        if (e.data instanceof Blob) {
-          console.log('[CAM] binary frame received —', e.data.size, 'bytes');
-          const url = URL.createObjectURL(e.data);
-          if (camUrlRef.current) URL.revokeObjectURL(camUrlRef.current);
-          camUrlRef.current = url;
-          set({ camFrame: url });
-          return;
-        }
-
         let msg;
         try { msg = JSON.parse(e.data); } catch { return; }
 
-        
         if (msg.type === 'pong') {
           set({ latencyMs: Date.now() - t0 });
           return;
         }
 
         if (msg.type === 'identify' && msg.client === 'camera') {
-          console.log('[CAM] camera client identified');
           set({ camConnected: true });
           return;
         }
@@ -142,6 +128,41 @@ export default function App() {
     connect();
     return () => {
       clearInterval(pingTimer);
+      clearTimeout(reconnectTimer);
+      ws?.close();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Camera WebSocket  →  /ws/camera  (binary frames only)
+  useEffect(() => {
+    const base = import.meta.env.VITE_WS_URL
+      ?? `${window.location.origin.replace(/^http/, 'ws')}/ws`;
+    const camUrl = base.replace(/\/ws$/, '/ws/camera');
+
+    let ws;
+    let reconnectTimer;
+
+    function connect() {
+      ws = new WebSocket(camUrl);
+      ws.binaryType = 'blob';
+
+      ws.onmessage = (e) => {
+        if (!(e.data instanceof Blob)) return;
+        const url = URL.createObjectURL(e.data);
+        if (camUrlRef.current) URL.revokeObjectURL(camUrlRef.current);
+        camUrlRef.current = url;
+        set({ camFrame: url });
+      };
+
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {};
+    }
+
+    connect();
+    return () => {
       clearTimeout(reconnectTimer);
       ws?.close();
     };
