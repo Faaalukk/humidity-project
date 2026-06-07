@@ -99,6 +99,41 @@ export default function CameraScreen({ state, control }) {
           {state.lampOn ? "Lamp · ON" : "Turn on lamp"}
         </button>
       </div>
+      <div className="panel grow" style={{ padding: "10px 16px" }}>
+        <div className="row" style={{ justifyContent: "space-around" }}>
+          <div style={{ textAlign: "center" }}>
+            <div className="label-sm" style={{ marginBottom: 2 }}>
+              TEMP
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 22,
+                fontWeight: 700,
+              }}
+            >
+              {temp.toFixed(1)}
+              <span style={{ fontSize: 13, opacity: 0.6 }}>°C</span>
+            </div>
+          </div>
+          <div style={{ width: 1, background: "rgba(255,255,255,0.08)" }} />
+          <div style={{ textAlign: "center" }}>
+            <div className="label-sm" style={{ marginBottom: 2 }}>
+              HUMIDITY
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 22,
+                fontWeight: 700,
+              }}
+            >
+              {Math.round(hum)}
+              <span style={{ fontSize: 13, opacity: 0.6 }}>%</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
